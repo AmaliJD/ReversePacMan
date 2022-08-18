@@ -12,7 +12,7 @@ public class Ghost : MonoBehaviour
     /*public enum ChaseMode { direct, eastsidenegative};
     public ChaseMode chasemode;*/
 
-    [Min(0)]
+    //[Min(0)]
     public int lookAhead;
 
     [Min(0)]
@@ -39,6 +39,7 @@ public class Ghost : MonoBehaviour
     private Vector2 startPos;
     private SpriteRenderer outline, inner;
     private GameObject outlineObj, eye, pupil, eyeFrightened;
+    private bool moreFrightened;
 
     public float speed;
     private float initSpeed;
@@ -86,7 +87,7 @@ public class Ghost : MonoBehaviour
         {
             case Mode.chase:
                 targetPos = target.position;
-                if (lookAhead > 0) { targetPos += ((Vector2)target.right * lookAhead); }
+                if (lookAhead != 0) { targetPos += ((Vector2)target.right * lookAhead); }
                 if (eastSideGhost != null) { targetPos -= ((Vector2)eastSideGhost.position - targetPos); }
                 if (range > 0 && Vector2.Distance(transform.position, targetPos) < range) { targetPos = scatterTarget.position; }
 
@@ -172,10 +173,10 @@ public class Ghost : MonoBehaviour
             distances[2] = Vector2.Distance(targetPos, rb.position + new Vector2(0, -1));
             distances[3] = Vector2.Distance(targetPos, rb.position + new Vector2(1, 0));
 
-            if (Physics2D.BoxCast(rb.position, Vector2.one * .85f, 0, Vector2.up, .1f, mapLayer) || Vector2.up == -moveDirection || (disable && disabler.up)) { distances[0] = float.MaxValue; }
-            if (Physics2D.BoxCast(rb.position, Vector2.one * .85f, 0, Vector2.left, .1f, mapLayer) || Vector2.left == -moveDirection || (disable && disabler.left)) { distances[1] = float.MaxValue; }
-            if (Physics2D.BoxCast(rb.position, Vector2.one * .85f, 0, Vector2.down, .1f, mapLayer) || Vector2.down == -moveDirection || (disable && disabler.down)) { distances[2] = float.MaxValue; }
-            if (Physics2D.BoxCast(rb.position, Vector2.one * .85f, 0, Vector2.right, .1f, mapLayer) || Vector2.right == -moveDirection || (disable && disabler.right)) { distances[3] = float.MaxValue; }
+            if (Physics2D.BoxCast(rb.position, Vector2.one * .9f, 0, Vector2.up, .06f, mapLayer) || Vector2.up == -moveDirection || (disable && disabler.up)) { distances[0] = float.MaxValue; }
+            if (Physics2D.BoxCast(rb.position, Vector2.one * .9f, 0, Vector2.left, .06f, mapLayer) || Vector2.left == -moveDirection || (disable && disabler.left)) { distances[1] = float.MaxValue; }
+            if (Physics2D.BoxCast(rb.position, Vector2.one * .9f, 0, Vector2.down, .06f, mapLayer) || Vector2.down == -moveDirection || (disable && disabler.down)) { distances[2] = float.MaxValue; }
+            if (Physics2D.BoxCast(rb.position, Vector2.one * .9f, 0, Vector2.right, .06f, mapLayer) || Vector2.right == -moveDirection || (disable && disabler.right)) { distances[3] = float.MaxValue; }
 
             float minDistance = Mathf.Min(Mathf.Min(Mathf.Min(distances[0], distances[1]), distances[2]), distances[3]);
             if (minDistance == distances[0]) { moveDirection = Vector2.up; }
@@ -192,15 +193,36 @@ public class Ghost : MonoBehaviour
         }
     }
 
-    public Vector2Int[] nextSteps(int steps)
+    public Vector2Int[] nextSteps(int steps, bool recalcMoveDirection, bool forcePacManTarget)
     {
         Vector2Int[] path = new Vector2Int[steps];
 
         //Vector2 tempTarget = (mode == Mode.frightented ? (Vector2)target.position : targetPos);
-        Vector2 tempMoveDirection = moveDirection;// (prevMode != Mode.frightented && mode == Mode.frightented) ? -moveDirection : moveDirection;
+        Vector2 tempMoveDirection = moveDirection;
+
+        Vector2 tPos = !forcePacManTarget ? targetPos : (Vector2)target.position;
         float[] tempDistances = new float[4];
         Vector2Int roundedPos = new Vector2Int(Mathf.RoundToInt(transform.position.x), Mathf.RoundToInt(transform.position.y));
         path[0] = roundedPos;
+
+        if (recalcMoveDirection)
+        {
+            tempDistances[0] = Vector2.Distance(tPos, roundedPos + Vector2.up);
+            tempDistances[1] = Vector2.Distance(tPos, roundedPos + Vector2.left);
+            tempDistances[2] = Vector2.Distance(tPos, roundedPos + Vector2.down);
+            tempDistances[3] = Vector2.Distance(tPos, roundedPos + Vector2.right);
+
+            if (Physics2D.BoxCast(roundedPos, Vector2.one * .9f, 0, Vector2.up, .06f, mapLayer)) { tempDistances[0] = float.MaxValue; }
+            if (Physics2D.BoxCast(roundedPos, Vector2.one * .9f, 0, Vector2.left, .06f, mapLayer)) { tempDistances[1] = float.MaxValue; }
+            if (Physics2D.BoxCast(roundedPos, Vector2.one * .9f, 0, Vector2.down, .06f, mapLayer)) { tempDistances[2] = float.MaxValue; }
+            if (Physics2D.BoxCast(roundedPos, Vector2.one * .9f, 0, Vector2.right, .06f, mapLayer)) { tempDistances[3] = float.MaxValue; }
+
+            float minDistance = Mathf.Min(Mathf.Min(Mathf.Min(tempDistances[0], tempDistances[1]), tempDistances[2]), tempDistances[3]);
+            if (minDistance == tempDistances[0]) { tempMoveDirection = Vector2.up; }
+            else if (minDistance == tempDistances[1]) { tempMoveDirection = Vector2.left; }
+            else if (minDistance == tempDistances[2]) { tempMoveDirection = Vector2.down; }
+            else if (minDistance == tempDistances[3]) { tempMoveDirection = Vector2.right; }
+        }
 
         for (int i = 1; i < steps; i++)
         {
@@ -209,10 +231,10 @@ public class Ghost : MonoBehaviour
 
             path[i] = roundedPos;
 
-            tempDistances[0] = Vector2.Distance(targetPos, roundedPos + Vector2.up);
-            tempDistances[1] = Vector2.Distance(targetPos, roundedPos + Vector2.left);
-            tempDistances[2] = Vector2.Distance(targetPos, roundedPos + Vector2.down);
-            tempDistances[3] = Vector2.Distance(targetPos, roundedPos + Vector2.right);
+            tempDistances[0] = Vector2.Distance(tPos, roundedPos + Vector2.up);
+            tempDistances[1] = Vector2.Distance(tPos, roundedPos + Vector2.left);
+            tempDistances[2] = Vector2.Distance(tPos, roundedPos + Vector2.down);
+            tempDistances[3] = Vector2.Distance(tPos, roundedPos + Vector2.right);
 
             if (Physics2D.BoxCast(roundedPos, Vector2.one * .9f, 0, Vector2.up, .06f, mapLayer) || Vector2.up == -tempMoveDirection) { tempDistances[0] = float.MaxValue; }
             if (Physics2D.BoxCast(roundedPos, Vector2.one * .9f, 0, Vector2.left, .06f, mapLayer) || Vector2.left == -tempMoveDirection) { tempDistances[1] = float.MaxValue; }
@@ -284,9 +306,10 @@ public class Ghost : MonoBehaviour
 
     public IEnumerator SetFrightened(float time)
     {
+        //if (mode == Mode.frightented) { moreFrightened = true; }
         if (mode == Mode.chase || mode == Mode.scatter) { mode = Mode.frightented; }
         yield return new WaitForSeconds(time);
-        if (mode == Mode.frightented) { mode = Mode.chase; }
+        if (mode == Mode.frightented/* && !moreFrightened*/) { mode = Mode.chase; }
     }
 
 #if UNITY_EDITOR
@@ -296,7 +319,7 @@ public class Ghost : MonoBehaviour
         Gizmos.DrawLine(transform.position, targetPos);
         Gizmos.DrawSphere(targetPos, .3f);
 
-        Vector2Int[] path = nextSteps(10);
+        Vector2Int[] path = nextSteps(10, mode == Mode.frightented, mode == Mode.frightented);
         foreach (Vector2 v in path)
         {
             Gizmos.DrawCube(v, Vector3.one * .5f);

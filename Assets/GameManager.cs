@@ -9,6 +9,7 @@ public class GameManager : MonoBehaviour
     public GlobalVariables global;
     private Color startColor;
     public int levelNumber;
+    public Vector2 swapModeRates;
     private List<Ghost> ghosts;
     public Transform ghostsParent;
     public Tilemap map;
@@ -25,7 +26,7 @@ public class GameManager : MonoBehaviour
 
     public GameObject loseScreen, winScreen;
     public GameObject[] reasons;
-    private bool winstate;
+    private bool winstate, losestate;
 
     private void Awake()
     {
@@ -36,13 +37,21 @@ public class GameManager : MonoBehaviour
         ghosts = new List<Ghost>();
         foreach (Transform t in ghostsParent)
         {
-            ghosts.Add(t.GetComponent<Ghost>());
+            //ghosts.Add(t.GetComponent<Ghost>());
+            if (t.gameObject.activeSelf)
+            {
+                ghosts.Add(t.GetComponent<Ghost>());
+            }
         }
         player = GameObject.FindGameObjectWithTag("Player").GetComponent<PlayerController>();
         pacman = GameObject.FindGameObjectWithTag("PacMan").GetComponent<PacManAI>();
 
         siren = sirens[sirenIndex];
-        StartCoroutine(SwapMode());
+        if(swapModeRates.x != 0 && swapModeRates.y != 0)
+        {
+            StartCoroutine(SwapMode());
+        }
+        //StartCoroutine(SwapMode());
         StartCoroutine(ChangeMapColor());
         StartCoroutine(BGMusic());
 
@@ -59,9 +68,16 @@ public class GameManager : MonoBehaviour
         {
             Menu();
         }
-        else if (Input.GetKeyDown(KeyCode.Space) && winstate)
+        else if (Input.GetKeyDown(KeyCode.Space))
         {
-            NextLevel();
+            if(winstate)
+            {
+                NextLevel();
+            }
+            else if(losestate)
+            {
+                Restart();
+            }
         }
     }
 
@@ -222,18 +238,18 @@ public class GameManager : MonoBehaviour
     {
         while (true)
         {
-            timeTillSwap = Random.Range(10f, 30f);
-            time = Random.Range(1f, 10f);
-
-            yield return new WaitForSeconds(timeTillSwap);
+            //timeTillSwap = Random.Range(10f, 30f);
+            //time = Random.Range(1f, 10f);
+            //Debug.Log("Wait: " + swapModeRates.x);
+            yield return new WaitForSeconds(swapModeRates.x);
 
             foreach (Ghost g in ghosts)
             {
-                StartCoroutine(g.SetScatter(time));
+                StartCoroutine(g.SetScatter(swapModeRates.y));
             }
-            //Debug.Log("SCATTER: " + time);
+            //Debug.Log("SCATTER: " + swapModeRates.y);
 
-            yield return new WaitForSeconds(time);
+            yield return new WaitForSeconds(swapModeRates.y);
         }
     }
 
@@ -281,6 +297,7 @@ public class GameManager : MonoBehaviour
         eaten.Stop();
         frightened.Stop();
         siren.Stop();
+        losestate = true;
 
         loseScreen.SetActive(true);
         reasons[reason].SetActive(true);

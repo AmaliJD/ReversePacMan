@@ -14,8 +14,11 @@ public class PlayerController : MonoBehaviour
     public Transform target;
     private Vector2 targetPos;
     private Vector2 inputDirection, moveDirection;
-    private Vector2 prevPosition;
+    //private bool up, down, left, right;
+    private Vector2 prevPosition, prevTransformPosition;
     private bool moving = false;
+    private float keepmoving = 0;
+    private List<Vector2> keystrokes;
 
     public int lives;
 
@@ -51,36 +54,106 @@ public class PlayerController : MonoBehaviour
         targetPos = target.position;
 
         prevMode = mode;
-        moveDirection = Vector3.up;
+        moveDirection = Vector3.zero;
         inputDirection = moveDirection;
         prevPosition = rb.position;
 
         initPos = transform.position;
 
         gamemanager = GameObject.FindGameObjectWithTag("Main").GetComponent<GameManager>();
+        keystrokes = new List<Vector2>();
     }
 
     private void Update()
     {
         livesText.text = "x" + lives;
-        /*if(Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W) && moveDirection != Vector2.down)
+
+        //moving = rb.position != prevPosition;
+        //moving = Vector3.Distance(rb.position, prevPosition) > .00001f;
+        moving = Vector3.Distance(transform.position, prevTransformPosition) > .001f;
+        if(keepmoving > 0) { moving = true; keepmoving -= Time.deltaTime; }
+        //moving = (Vector2)transform.position != prevTransformPosition;
+        if (!moving) { moveDirection = Vector2.zero; }
+
+        /*if ((Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W)))
         {
             inputDirection = Vector2.up;
         }
-        else if (Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A) && moveDirection != Vector2.right)
+        else if ((Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A)))
         {
             inputDirection = Vector2.left;
         }
-        else if (Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A) && moveDirection != Vector2.up)
+        else if ((Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S)))
         {
             inputDirection = Vector2.down;
         }
-        else if (Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A) && moveDirection != Vector2.left)
+        else if ((Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D)))
         {
             inputDirection = Vector2.right;
+        }
+
+        if ((Input.GetKeyUp(KeyCode.UpArrow) || Input.GetKeyUp(KeyCode.W)))
+        {
+            if (Input.GetAxis("Horizontal") > 0)
+            {
+                inputDirection = Vector2.right;
+            }
+            else if (Input.GetAxis("Horizontal") < 0)
+            {
+                inputDirection = Vector2.left;
+            }
+            else if (Input.GetAxis("Vertical") < 0)
+            {
+                inputDirection = Vector2.down;
+            }
+        }
+        if ((Input.GetKeyUp(KeyCode.LeftArrow) || Input.GetKeyUp(KeyCode.A)))
+        {
+            if (Input.GetAxis("Vertical") > 0)
+            {
+                inputDirection = Vector2.up;
+            }
+            else if (Input.GetAxis("Vertical") < 0)
+            {
+                inputDirection = Vector2.down;
+            }
+            else if (Input.GetAxis("Horizontal") > 0)
+            {
+                inputDirection = Vector2.right;
+            }
+        }
+        if ((Input.GetKeyUp(KeyCode.DownArrow) || Input.GetKeyUp(KeyCode.S)))
+        {
+            if (Input.GetAxis("Horizontal") > 0)
+            {
+                inputDirection = Vector2.right;
+            }
+            else if (Input.GetAxis("Horizontal") < 0)
+            {
+                inputDirection = Vector2.left;
+            }
+            else if (Input.GetAxis("Vertical") > 0)
+            {
+                inputDirection = Vector2.up;
+            }
+        }
+        if ((Input.GetKeyUp(KeyCode.RightArrow) || Input.GetKeyUp(KeyCode.D)))
+        {
+            if (Input.GetAxis("Vertical") > 0)
+            {
+                inputDirection = Vector2.up;
+            }
+            else if (Input.GetAxis("Vertical") < 0)
+            {
+                inputDirection = Vector2.down;
+            }
+            else if (Input.GetAxis("Horizontal") < 0)
+            {
+                inputDirection = Vector2.left;
+            }
         }*/
 
-        if (Input.GetAxis("Vertical") > 0 && moveDirection != Vector2.down)
+        /*if (Input.GetAxis("Vertical") > 0 && moveDirection != Vector2.down)
         {
             inputDirection = Vector2.up;
         }
@@ -95,9 +168,74 @@ public class PlayerController : MonoBehaviour
         else if (Input.GetAxis("Horizontal") > 0 && moveDirection != Vector2.left)
         {
             inputDirection = Vector2.right;
+        }*/
+
+        /*up = Input.GetAxis("Vertical") > 0;
+        down = Input.GetAxis("Vertical") < 0;
+        left = Input.GetAxis("Horizontal") < 0;
+        right = Input.GetAxis("Horizontal") > 0;
+
+        if ((Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W)) && up)
+        {
+            inputDirection = Vector2.up;
+        }
+        else if ((Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A)) && left)
+        {
+            inputDirection = Vector2.left;
+        }
+        else if ((Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S)) && down)
+        {
+            inputDirection = Vector2.down;
+        }
+        else if ((Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D)) && right)
+        {
+            inputDirection = Vector2.right;
         }
 
         if (Input.GetAxis("Vertical") == 0 && Input.GetAxis("Horizontal") == 0)
+        {
+            inputDirection = moveDirection;
+        }*/
+
+        if (!(Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W)) && keystrokes.Contains(Vector2.up))
+        {
+            keystrokes.Remove(Vector2.up);
+        }
+        if (!(Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A)) && keystrokes.Contains(Vector2.left))
+        {
+            keystrokes.Remove(Vector2.left);
+        }
+        if (!(Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S)) && keystrokes.Contains(Vector2.down))
+        {
+            keystrokes.Remove(Vector2.down);
+        }
+        if (!(Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D)) && keystrokes.Contains(Vector2.right))
+        {
+            keystrokes.Remove(Vector2.right);
+        }
+
+        if ((Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W)) && !keystrokes.Contains(Vector2.up))
+        {
+            keystrokes.Add(Vector2.up);
+        }
+        if ((Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A)) && !keystrokes.Contains(Vector2.left))
+        {
+            keystrokes.Add(Vector2.left);
+        }
+        if ((Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S)) && !keystrokes.Contains(Vector2.down))
+        {
+            keystrokes.Add(Vector2.down);
+        }
+        if ((Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D)) && !keystrokes.Contains(Vector2.right))
+        {
+            keystrokes.Add(Vector2.right);
+        }
+
+        if(keystrokes.Count > 0)
+        {
+            inputDirection = keystrokes[keystrokes.Count - 1];
+        }
+        else
         {
             inputDirection = moveDirection;
         }
@@ -146,7 +284,8 @@ public class PlayerController : MonoBehaviour
         }
 
         prevMode = mode;
-        moving = rb.position != prevPosition;
+        prevTransformPosition = transform.position;
+        //moving = rb.position != prevPosition;
         //Debug.Log(moving);
         //Debug.Log(inputDirection + "   " + moveDirection);
     }
@@ -158,7 +297,10 @@ public class PlayerController : MonoBehaviour
 
         if (mode != Mode.eaten)
         {
-            if (!Physics2D.BoxCast(rb.position, Vector2.one * .85f, 0, inputDirection, .1f, mapLayer))
+            float boxtcastsize = mode != Mode.frightented ? .65f : .85f;
+            float boxtcastdist = mode != Mode.frightented ? .3f : .1f;
+
+            if (!Physics2D.BoxCast(rb.position, Vector2.one * boxtcastsize, 0, inputDirection, boxtcastdist, mapLayer) && inputDirection != -moveDirection)
             {
                 moveDirection = inputDirection;
             }
@@ -183,33 +325,34 @@ public class PlayerController : MonoBehaviour
             else if (minDistance == distances[3]) { moveDirection = Vector2.right; }
         }
 
-        if (moveDirection.x == 0) { rb.position = new Vector2(Mathf.RoundToInt(rb.position.x), rb.position.y); }
-        else if (moveDirection.y == 0) { rb.position = new Vector2(rb.position.x, Mathf.RoundToInt(rb.position.y)); }
+        if (moveDirection.x == 0 && moveDirection.y != 0) { rb.position = new Vector2(Mathf.RoundToInt(rb.position.x), rb.position.y); }
+        else if (moveDirection.y == 0 && moveDirection.x != 0) { rb.position = new Vector2(rb.position.x, Mathf.RoundToInt(rb.position.y)); }
 
         prevPosition = rb.position;
         rb.MovePosition(Vector2.MoveTowards(rb.position, rb.position + moveDirection, speed * Time.fixedDeltaTime));
     }
 
-    public Vector2Int[] nextSteps(int steps)
+    public Vector2Int[] nextSteps(int steps, bool recalcMoveDirection, bool forcePacManTarget)
     {
         Vector2Int[] path = new Vector2Int[steps];
 
         //Vector2 tempTarget = (mode == Mode.frightented ? (Vector2)target.position : targetPos);
         Vector2 tempMoveDirection = moveDirection;// (prevMode != Mode.frightented && mode == Mode.frightented) ? -moveDirection : moveDirection;
         Vector2Int roundedPos = new Vector2Int(Mathf.RoundToInt(transform.position.x), Mathf.RoundToInt(transform.position.y));
+        Vector2 tPos = !forcePacManTarget ? targetPos : (Vector2)target.position;
 
-        if (!moving)
+        if (!moving || recalcMoveDirection)
         {
             float[] distances = new float[4];
-            distances[0] = Vector2.Distance(targetPos, roundedPos + new Vector2(0, 1));
-            distances[1] = Vector2.Distance(targetPos, roundedPos + new Vector2(-1, 0));
-            distances[2] = Vector2.Distance(targetPos, roundedPos + new Vector2(0, -1));
-            distances[3] = Vector2.Distance(targetPos, roundedPos + new Vector2(1, 0));
+            distances[0] = Vector2.Distance(tPos, roundedPos + new Vector2(0, 1));
+            distances[1] = Vector2.Distance(tPos, roundedPos + new Vector2(-1, 0));
+            distances[2] = Vector2.Distance(tPos, roundedPos + new Vector2(0, -1));
+            distances[3] = Vector2.Distance(tPos, roundedPos + new Vector2(1, 0));
 
-            if (Physics2D.BoxCast(roundedPos, Vector2.one * .9f, 0, Vector2.up, .06f, mapLayer) || Vector2.up == -tempMoveDirection) { distances[0] = float.MaxValue; }
-            if (Physics2D.BoxCast(roundedPos, Vector2.one * .9f, 0, Vector2.left, .06f, mapLayer) || Vector2.left == -tempMoveDirection) { distances[1] = float.MaxValue; }
-            if (Physics2D.BoxCast(roundedPos, Vector2.one * .9f, 0, Vector2.down, .06f, mapLayer) || Vector2.down == -tempMoveDirection) { distances[2] = float.MaxValue; }
-            if (Physics2D.BoxCast(roundedPos, Vector2.one * .9f, 0, Vector2.right, .06f, mapLayer) || Vector2.right == -tempMoveDirection) { distances[3] = float.MaxValue; }
+            if (Physics2D.BoxCast(roundedPos, Vector2.one * .9f, 0, Vector2.up, .06f, mapLayer)) { distances[0] = float.MaxValue; }
+            if (Physics2D.BoxCast(roundedPos, Vector2.one * .9f, 0, Vector2.left, .06f, mapLayer)) { distances[1] = float.MaxValue; }
+            if (Physics2D.BoxCast(roundedPos, Vector2.one * .9f, 0, Vector2.down, .06f, mapLayer)) { distances[2] = float.MaxValue; }
+            if (Physics2D.BoxCast(roundedPos, Vector2.one * .9f, 0, Vector2.right, .06f, mapLayer)) { distances[3] = float.MaxValue; }
 
             float minDistance = Mathf.Min(Mathf.Min(Mathf.Min(distances[0], distances[1]), distances[2]), distances[3]);
             if (minDistance == distances[0]) { tempMoveDirection = Vector2.up; }
@@ -228,10 +371,10 @@ public class PlayerController : MonoBehaviour
 
             path[i] = roundedPos;
 
-            tempDistances[0] = Vector2.Distance(targetPos, roundedPos + Vector2.up);
-            tempDistances[1] = Vector2.Distance(targetPos, roundedPos + Vector2.left);
-            tempDistances[2] = Vector2.Distance(targetPos, roundedPos + Vector2.down);
-            tempDistances[3] = Vector2.Distance(targetPos, roundedPos + Vector2.right);
+            tempDistances[0] = Vector2.Distance(tPos, roundedPos + Vector2.up);
+            tempDistances[1] = Vector2.Distance(tPos, roundedPos + Vector2.left);
+            tempDistances[2] = Vector2.Distance(tPos, roundedPos + Vector2.down);
+            tempDistances[3] = Vector2.Distance(tPos, roundedPos + Vector2.right);
 
             if (Physics2D.BoxCast(roundedPos, Vector2.one * .9f, 0, Vector2.up, .06f, mapLayer) || Vector2.up == -tempMoveDirection) { tempDistances[0] = float.MaxValue; }
             if (Physics2D.BoxCast(roundedPos, Vector2.one * .9f, 0, Vector2.left, .06f, mapLayer) || Vector2.left == -tempMoveDirection) { tempDistances[1] = float.MaxValue; }
@@ -252,7 +395,8 @@ public class PlayerController : MonoBehaviour
     {
         transform.position = initPos;
         mode = Mode.chase;
-        moveDirection = Vector2.up;
+        inputDirection = Vector2.zero;
+        moveDirection = Vector2.zero;
         stop = false;
     }
 
@@ -261,6 +405,7 @@ public class PlayerController : MonoBehaviour
         if (collision.tag == "Teleport")
         {
             transform.position = collision.transform.GetChild(0).position;
+            keepmoving = .05f;
         }
         if (collision.tag == "PacMan")
         {
@@ -301,7 +446,7 @@ public class PlayerController : MonoBehaviour
         Gizmos.DrawLine(transform.position, targetPos);
         Gizmos.DrawSphere(targetPos, .3f);
 
-        Vector2Int[] path = nextSteps(10);
+        Vector2Int[] path = nextSteps(10, mode == Mode.frightented, mode == Mode.frightented);
         foreach (Vector2 v in path)
         {
             Gizmos.DrawCube(v, Vector3.one * .5f);

@@ -4489,7 +4489,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6790744436164018244, guid: 4f9ccfe945c639f4eb877f62dce67749, type: 3}
       propertyPath: m_Name
-      value: Ghost (3)
+      value: Clyde
       objectReference: {fileID: 0}
     - target: {fileID: 6790744436164018244, guid: 4f9ccfe945c639f4eb877f62dce67749, type: 3}
       propertyPath: m_IsActive
@@ -4561,7 +4561,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6790744436164018296, guid: 4f9ccfe945c639f4eb877f62dce67749, type: 3}
       propertyPath: color.g
-      value: 0.7320886
+      value: 0.6
       objectReference: {fileID: 0}
     - target: {fileID: 6790744436164018296, guid: 4f9ccfe945c639f4eb877f62dce67749, type: 3}
       propertyPath: color.r
@@ -12556,6 +12556,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   global: {fileID: 11400000, guid: f96f16be4c38f7847a0585672315810c, type: 2}
   levelNumber: 0
+  swapModeRates: {x: 20, y: 20}
   ghostsParent: {fileID: 1611801040}
   map: {fileID: 1157699637}
   bgMusic: {fileID: 367749169}
@@ -12767,7 +12768,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6790744436164018244, guid: 4f9ccfe945c639f4eb877f62dce67749, type: 3}
       propertyPath: m_Name
-      value: Ghost (2)
+      value: Inky
       objectReference: {fileID: 0}
     - target: {fileID: 6790744436164018244, guid: 4f9ccfe945c639f4eb877f62dce67749, type: 3}
       propertyPath: m_IsActive
@@ -12831,7 +12832,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6790744436164018296, guid: 4f9ccfe945c639f4eb877f62dce67749, type: 3}
       propertyPath: color.b
-      value: 0.971756
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6790744436164018296, guid: 4f9ccfe945c639f4eb877f62dce67749, type: 3}
       propertyPath: color.g
@@ -14030,7 +14031,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6790744436164018244, guid: 4f9ccfe945c639f4eb877f62dce67749, type: 3}
       propertyPath: m_Name
-      value: Ghost (1)
+      value: Pinky
       objectReference: {fileID: 0}
     - target: {fileID: 6790744436164018244, guid: 4f9ccfe945c639f4eb877f62dce67749, type: 3}
       propertyPath: m_IsActive
@@ -14094,7 +14095,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6790744436164018296, guid: 4f9ccfe945c639f4eb877f62dce67749, type: 3}
       propertyPath: color.b
-      value: 0.91594553
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6790744436164018296, guid: 4f9ccfe945c639f4eb877f62dce67749, type: 3}
       propertyPath: color.g
@@ -17223,7 +17224,7 @@ PrefabInstance:
       objectReference: {fileID: 1645918466}
     - target: {fileID: 6790744436164018244, guid: 4f9ccfe945c639f4eb877f62dce67749, type: 3}
       propertyPath: m_Name
-      value: Ghost
+      value: Blinky
       objectReference: {fileID: 0}
     - target: {fileID: 6790744436164018244, guid: 4f9ccfe945c639f4eb877f62dce67749, type: 3}
       propertyPath: m_IsActive

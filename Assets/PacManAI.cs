@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using UnityEngine.UI;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public class PacManAI : MonoBehaviour
 {
@@ -14,6 +17,8 @@ public class PacManAI : MonoBehaviour
     private List<Ghost> ghosts;
     private PlayerController player;
     private List<Vector2> nodePos;
+    private TextMesh[] weightTexts;
+    private Transform weightTextParent;
 
     private Animator pacmanAnim;
     public AudioSource pelletSfx1, pelletSfx2, deathSfx;
@@ -57,14 +62,31 @@ public class PacManAI : MonoBehaviour
         //targets = new List<Vector2>();
         foreach (Transform t in ghostsParent)
         {
-            ghosts.Add(t.GetComponent<Ghost>());
+            if(t.gameObject.activeSelf)
+            {
+                ghosts.Add(t.GetComponent<Ghost>());
+            }
         }
         /*foreach (Transform t in nodeMap.transform)
         {
             nodePos.Add(t.transform.position);
         }*/
+#if UNITY_EDITOR
+        weightTexts = new TextMesh[4];
+        weightTextParent = transform.GetChild(transform.childCount - 1);
+        weightTextParent.gameObject.SetActive(true);
+        weightTexts[0] = weightTextParent.GetChild(0).GetComponent<TextMesh>();
+        weightTexts[1] = weightTextParent.GetChild(1).GetComponent<TextMesh>();
+        weightTexts[2] = weightTextParent.GetChild(2).GetComponent<TextMesh>();
+        weightTexts[3] = weightTextParent.GetChild(3).GetComponent<TextMesh>();
+#endif
 
         gamemanager = GameObject.FindGameObjectWithTag("Main").GetComponent<GameManager>();
+
+        updateGridTimer = -.2f;
+        //moveDirection = Vector2.zero;
+        int rev = Random.Range(0, 2) == 0 ? -1 : 1;
+        moveDirection = new Vector2(rev * 1, 0);
 
         directionTracker = new Vector2[2];
         weights = new float[4];
@@ -80,8 +102,8 @@ public class PacManAI : MonoBehaviour
             for (int j = 0; j < baseGrid.GetLength(1); j++)
             {
                 Vector2 worldPos = ConvertGridToWorldCoords(new Vector2(i, j));
-                if (map.HasTile(map.WorldToCell(worldPos)) || oobMap.HasTile(oobMap.WorldToCell(worldPos))) { baseGrid[i, j] = -10; }
-                else if (pelletMap.HasTile(pelletMap.WorldToCell(worldPos))) { baseGrid[i, j] = 50; }
+                if (map.HasTile(map.WorldToCell(worldPos)) || oobMap.HasTile(oobMap.WorldToCell(worldPos))) { baseGrid[i, j] = -1; }
+                else if (pelletMap.HasTile(pelletMap.WorldToCell(worldPos))) { baseGrid[i, j] = 60; }
                 else if (powerPelletMap.HasTile(pelletMap.WorldToCell(worldPos))) { baseGrid[i, j] = 100; }
                 else { baseGrid[i, j] = 40; }
             }
@@ -109,6 +131,13 @@ public class PacManAI : MonoBehaviour
         {
             gamemanager.Lose(1);
         }
+
+#if UNITY_EDITOR
+        if(weightTextParent.rotation != Quaternion.identity)
+        {
+            weightTextParent.gameObject.SetActive(false);
+        }
+#endif
     }
 
     bool gotPelletCount;
@@ -128,20 +157,24 @@ public class PacManAI : MonoBehaviour
         }
         alterGrid = (float[,])baseGrid.Clone();
 
-        foreach(Ghost g in ghosts)
+        Vector2Int selfCoord = ConvertWorldToGridCoords(transform.position);
+
+        foreach (Ghost g in ghosts)
         {
-            Vector2Int[] path = g.nextSteps((g.mode == Ghost.Mode.frightented ? 2 : 1) * steps);
+            Vector2Int[] path = g.nextSteps(/*(g.mode == Ghost.Mode.frightented ? 2 : 1) * */steps, g.mode == Ghost.Mode.frightented, g.mode == Ghost.Mode.frightented);
             int i = 1;
-            foreach(Vector2 v in path)
+            bool reached = false;
+            foreach (Vector2 v in path)
             {
                 Vector2Int coord = ConvertWorldToGridCoords(v);
+                
                 if(coord.x >= 0 && coord.x < alterGrid.GetLength(0) && coord.y >= 0 && coord.y < alterGrid.GetLength(1))
                 {
                     switch(g.mode)
                     {
                         case Ghost.Mode.chase:
                         case Ghost.Mode.scatter:
-                            alterGrid[coord.x, coord.y] *= Mathf.Pow((float)i / (float)steps, 2);
+                            alterGrid[coord.x, coord.y] *= Mathf.Pow((float)i / (float)steps, reached ? 1 : 2);
                             break;
                         case Ghost.Mode.frightented:
                             alterGrid[coord.x, coord.y] /= ((float)i / (float)steps);
@@ -152,22 +185,26 @@ public class PacManAI : MonoBehaviour
                     }
                     
                 }
-                
+                if (selfCoord == coord) { reached = true; }
+                //if (reached) { break; }
+
                 i++;
             }
         }
 
-        Vector2Int[] playerPath = player.nextSteps((player.mode == PlayerController.Mode.frightented ? 2 : 1) * steps);
+        Vector2Int[] playerPath = player.nextSteps(/*(player.mode == PlayerController.Mode.frightented ? 2 : 1) * */steps, player.mode == PlayerController.Mode.frightented, player.mode == PlayerController.Mode.frightented);
         int j = 1;
+        bool playerReached = false;
         foreach (Vector2 v in playerPath)
         {
             Vector2Int coord = ConvertWorldToGridCoords(v);
+            
             if (coord.x >= 0 && coord.x < alterGrid.GetLength(0) && coord.y >= 0 && coord.y < alterGrid.GetLength(1))
             {
                 switch (player.mode)
                 {
                     case PlayerController.Mode.chase:
-                        alterGrid[coord.x, coord.y] *= Mathf.Pow((float)j / (float)steps, 2);
+                        alterGrid[coord.x, coord.y] *= Mathf.Pow((float)j / (float)steps, playerReached ? 1 : 2);
                         break;
                     case PlayerController.Mode.frightented:
                         alterGrid[coord.x, coord.y] /= ((float)j / (float)steps);
@@ -175,7 +212,8 @@ public class PacManAI : MonoBehaviour
                     case PlayerController.Mode.eaten:
                         break;
                 }
-
+                if (selfCoord == coord) { playerReached = true; }
+                //if (playerReached) { break; }
             }
 
             j++;
@@ -190,7 +228,7 @@ public class PacManAI : MonoBehaviour
             gotPelletCount = true;
         }
 
-        if (updateGridTimer >= .1f) { updateGridTimer = 0; }
+        if (updateGridTimer >= .15f || alterGrid[ConvertWorldToGridCoords((Vector2)transform.position + moveDirection).x, ConvertWorldToGridCoords((Vector2)transform.position + moveDirection).y] == -1) { updateGridTimer = 0; }
         if (updateGridTimer == 0)
         {
             weights[0] = alterGrid[ConvertWorldToGridCoords((Vector2)transform.position + Vector2.up).x, ConvertWorldToGridCoords((Vector2)transform.position + Vector2.up).y];
@@ -268,7 +306,7 @@ public class PacManAI : MonoBehaviour
                     }
 
                     //Debug.Log("noPelets: " + noPelletTimer + "    minWeight: " + minWeight);
-                    if (noPelletTimer > .5f && minWeight >= 10)
+                    if (noPelletTimer > .2f && minWeight >= 12 && maxWeight <= 80)
                     {
                         if(!toNode)
                         {
@@ -321,8 +359,8 @@ public class PacManAI : MonoBehaviour
             }
         }
 
-        if (moveDirection.x == 0) { rb.position = new Vector2(Mathf.RoundToInt(rb.position.x), rb.position.y); }
-        else if (moveDirection.y == 0) { rb.position = new Vector2(rb.position.x, Mathf.RoundToInt(rb.position.y)); }
+        if (moveDirection.x == 0 && moveDirection.y != 0) { rb.position = new Vector2(Mathf.RoundToInt(rb.position.x), rb.position.y); }
+        else if (moveDirection.y == 0 && moveDirection.x != 0) { rb.position = new Vector2(rb.position.x, Mathf.RoundToInt(rb.position.y)); }
 
         rb.MovePosition(Vector2.MoveTowards(rb.position, new Vector2(Mathf.RoundToInt(rb.position.x), Mathf.RoundToInt(rb.position.y)) + moveDirection, speed * Time.fixedDeltaTime));
         transform.right = moveDirection;
@@ -380,11 +418,11 @@ public class PacManAI : MonoBehaviour
         if(pelletMap.HasTile(pelletMap.WorldToCell(pos + Vector2.left))) { pelletCount++; }
         if(pelletMap.HasTile(pelletMap.WorldToCell(pos + Vector2.down))) { pelletCount++; }
         if(pelletMap.HasTile(pelletMap.WorldToCell(pos + Vector2.right))) { pelletCount++; }*/
-        if (baseGrid[ConvertWorldToGridCoords(pos + Vector2.up).x, ConvertWorldToGridCoords(pos + Vector2.up).y] == 50) { pelletCount++; nodeOffset = Vector2.up; }
-        if (baseGrid[ConvertWorldToGridCoords(pos + Vector2.left).x, ConvertWorldToGridCoords(pos + Vector2.left).y] == 50) { pelletCount++; nodeOffset = Vector2.left; }
-        if (baseGrid[ConvertWorldToGridCoords(pos + Vector2.down).x, ConvertWorldToGridCoords(pos + Vector2.down).y] == 50) { pelletCount++; nodeOffset = Vector2.down; }
-        if (baseGrid[ConvertWorldToGridCoords(pos + Vector2.right).x, ConvertWorldToGridCoords(pos + Vector2.right).y] == 50) { pelletCount++; nodeOffset = Vector2.right; }
-        if (baseGrid[ConvertWorldToGridCoords(pos).x, ConvertWorldToGridCoords(pos).y] == 50) { pelletCount++; nodeOffset = Vector2.zero; }
+        if (baseGrid[ConvertWorldToGridCoords(pos + Vector2.up).x, ConvertWorldToGridCoords(pos + Vector2.up).y] == 60) { pelletCount++; nodeOffset = Vector2.up; }
+        if (baseGrid[ConvertWorldToGridCoords(pos + Vector2.left).x, ConvertWorldToGridCoords(pos + Vector2.left).y] == 60) { pelletCount++; nodeOffset = Vector2.left; }
+        if (baseGrid[ConvertWorldToGridCoords(pos + Vector2.down).x, ConvertWorldToGridCoords(pos + Vector2.down).y] == 60) { pelletCount++; nodeOffset = Vector2.down; }
+        if (baseGrid[ConvertWorldToGridCoords(pos + Vector2.right).x, ConvertWorldToGridCoords(pos + Vector2.right).y] == 60) { pelletCount++; nodeOffset = Vector2.right; }
+        if (baseGrid[ConvertWorldToGridCoords(pos).x, ConvertWorldToGridCoords(pos).y] == 60) { pelletCount++; nodeOffset = Vector2.zero; }
 
         return pelletCount >= x;
     }
@@ -416,7 +454,10 @@ public class PacManAI : MonoBehaviour
             yield break;
         }
 
-        moveDirection = Vector2.right;
+        //moveDirection = Vector2.zero;
+        updateGridTimer = -.2f;
+        int rev = Random.Range(0, 2) == 0 ? -1 : 1;
+        moveDirection = new Vector2(rev*1, 0);
         transform.position = initPos;
         foreach (Ghost g in ghosts)
         {
@@ -506,11 +547,41 @@ public class PacManAI : MonoBehaviour
 #if UNITY_EDITOR
     private void OnDrawGizmos()
     {
-        if(toNode)
+        Vector2Int roundedPosition = new Vector2Int(Mathf.RoundToInt(transform.position.x), Mathf.RoundToInt(transform.position.y));
+
+        if (toNode)
         {
-            Gizmos.color = Color.white;
+            Gizmos.color = Color.yellow;
             Gizmos.DrawLine(transform.position, chosenNode);
             Gizmos.DrawSphere(chosenNode, .5f);
+        }
+        else
+        {
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawLine(transform.position, (Vector2)transform.position + moveDirection);
+            Gizmos.DrawSphere(roundedPosition + moveDirection, .5f);
+        }
+
+        if(weights !=  null && weights.Length > 0)
+        {
+            /*Handles.BeginGUI();
+            GUI.color = Color.yellow;
+            
+            Handles.Label((Vector2)transform.position + Vector2.up*2, weights[0] + "");
+            Handles.Label((Vector2)transform.position + Vector2.left*2, weights[1] + "");
+            Handles.Label((Vector2)transform.position + Vector2.down*2, weights[2] + "");
+            Handles.Label((Vector2)transform.position + Vector2.right*2, weights[3] + "");
+            Handles.EndGUI();*/
+            //float maxWeight = Mathf.Max(Mathf.Max(Mathf.Max(weights[0], weights[1]), weights[2]), weights[3]);
+            //float minWeight = Mathf.Min(Mathf.Min(Mathf.Min(weights[0] >= 0 ? weights[0] : 20, weights[1] >= 0 ? weights[1] : 20), weights[2] >= 0 ? weights[2] : 20), weights[3] >= 0 ? weights[3] : 20);
+            weightTextParent.gameObject.SetActive(true);
+
+            weightTexts[0].text = ((float)((int)(weights[0] * 10))) / 10 + "";
+            weightTexts[1].text = ((float)((int)(weights[1] * 10))) / 10 + "";
+            weightTexts[2].text = ((float)((int)(weights[2] * 10))) / 10 + "";
+            weightTexts[3].text = ((float)((int)(weights[3] * 10))) / 10 + "";
+
+            weightTextParent.rotation = Quaternion.identity;
         }
     }
 #endif
