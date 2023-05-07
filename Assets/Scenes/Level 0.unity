@@ -17542,6 +17542,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1611801040}
     - target: {fileID: 8334576322067668813, guid: 5ab1af31c733d0541a41e11af3df294c, type: 3}
+      propertyPath: scatterGhosts
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8334576322067668813, guid: 5ab1af31c733d0541a41e11af3df294c, type: 3}
       propertyPath: powerPelletMap
       value: 
       objectReference: {fileID: 296489689}
